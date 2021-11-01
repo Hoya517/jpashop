@@ -27,10 +27,14 @@ public class OrderQueryRepository {
     public List<OrderQueryDto> findAllByDto_optimization() {
         List<OrderQueryDto> result = findOrders();
 
-        List<Long> orderIds = result.stream()
-                .map(o -> o.getOrderId())
-                .collect(Collectors.toList());
+        Map<Object, List<OrderItemQueryDto>> orderItemMap = findOrderItemMap(toOrderIds(result));
 
+        result.forEach(o -> o.setOrderItems(orderItemMap.get(o.getOrderId())));
+
+        return result;
+    }
+
+    private Map<Object, List<OrderItemQueryDto>> findOrderItemMap(List<Long> orderIds) {
         List<OrderItemQueryDto> orderItems = em.createQuery(
                         "select new jpabook.jpashop.repository.order.query.OrderItemQueryDto(oi.order.id, i.name, oi.orderPrice, oi.count)" +
                                 " from OrderItem oi" +
@@ -41,10 +45,14 @@ public class OrderQueryRepository {
 
         Map<Object, List<OrderItemQueryDto>> orderItemMap = orderItems.stream()
                 .collect(Collectors.groupingBy(orderItemQueryDto -> orderItemQueryDto.getOrderId()));
+        return orderItemMap;
+    }
 
-        result.forEach(o -> o.setOrderItems(orderItemMap.get(o.getOrderId())));
-
-        return result;
+    private List<Long> toOrderIds(List<OrderQueryDto> result) {
+        List<Long> orderIds = result.stream()
+                .map(o -> o.getOrderId())
+                .collect(Collectors.toList());
+        return orderIds;
     }
 
     private List<OrderItemQueryDto> findOrderItems(Long orderId) {
