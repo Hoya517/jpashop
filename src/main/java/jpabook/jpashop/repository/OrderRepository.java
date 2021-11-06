@@ -111,10 +111,25 @@ public class OrderRepository {
 
         JPAQueryFactory query = new JPAQueryFactory(em);
         return query.select(order)
-                    .from(order)
-                    .join(order.member, member)
-                    .limit(1000)
-                    .fetch();
+                .from(order)
+                .join(order.member, member)
+                .where(statusEq(orderSearch.getOrderStatus()), nameLike(orderSearch.getMemberName()))
+                .limit(1000)
+                .fetch();
+    }
+
+    private BooleanExpression nameLike(String memberName) {
+        if (StringUtils.hasText(memberName)) {
+            return null;
+        }
+        return QMember.member.name.like(memberName);
+    }
+
+    private BooleanExpression statusEq(OrderStatus statusCond) {
+        if (statusCond == null) {
+            return null;
+        }
+        return QOrder.order.status.eq(statusCond);
     }
 
     public List<Order> findAllWithMemberDelivery() {
@@ -127,11 +142,11 @@ public class OrderRepository {
 
     public List<Order> findAllWithItem() {
         return em.createQuery(
-                "select distinct o from Order o" +
-                        " join fetch o.member m" +
-                        " join fetch o.delivery" +
-                        " join fetch o.orderItems oi" +
-                        " join fetch oi.item i", Order.class)
+                        "select distinct o from Order o" +
+                                " join fetch o.member m" +
+                                " join fetch o.delivery" +
+                                " join fetch o.orderItems oi" +
+                                " join fetch oi.item i", Order.class)
                 .setFirstResult(1)
                 .setMaxResults(100)
                 .getResultList();
@@ -139,9 +154,9 @@ public class OrderRepository {
 
     public List<Order> findAllWithMemberDelivery(int offset, int limit) {
         return em.createQuery(
-                "select o from Order o" +
-                        " join fetch o.member m" +
-                        " join fetch o.delivery d", Order.class)
+                        "select o from Order o" +
+                                " join fetch o.member m" +
+                                " join fetch o.delivery d", Order.class)
                 .setFirstResult(offset)
                 .setMaxResults(limit)
                 .getResultList();
